@@ -608,7 +608,7 @@ function Minter() {
       <li>Fish can extend their protective bubble or take steroids by paying fee.</li>
       <li>Eating smaller fish is free!</li>
       <li>When a fish has been eaten, the fish is no longer appears in the NFT's image.</li>
-      <li>When someone spwan a fish, the minting price increases by 0.1%.</li>
+      <li>When someone spawns a fish, the minting price increases by 0.1%.</li>
       </ul  >
       <div style={{color:"#c2feff"}}>
       Do you think you have what it takes to become the biggest fish in the ocean?
