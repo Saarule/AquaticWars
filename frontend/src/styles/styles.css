@@ -1,0 +1,216 @@
+:root {
+  --button-bg: #2fc422;
+  --button-active-bg: #681d9b;
+  --small-button-bg: #019c70;
+  --small-button-active-bg: #019c70;
+  --button-text: #ffffff;
+  --card: #03144f;
+  --accountText: #ffffff;
+  --statusText: #ffffff;
+  --bg-gradient_1: #0c6e9b;
+  --bg-gradient_2: rgb(182, 26, 39);
+  --gradient_1: #1037c5;
+  --gradient_2: #0b2481;
+  --gradient_3: #081850;
+  --success: #106823;
+  --warning: #ca5824;
+  --error: #ca2f24;
+}
+
+* {
+  font-family: "MyFont", monospace;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+html,
+body {
+	background: #00246b;
+	color: rgb(255, 255, 255);
+	font: 100% MyFont;
+	height: 100vh;
+	margin: 0;
+	padding: 0;
+	overflow-x: hidden;
+    
+    
+}
+
+@font-face {
+  font-family: 'MyFont';
+  src: local('MyFont'), url(../fonts/PixelOperator.ttf) format('ttf');
+}
+
+@keyframes gradient { 
+  0%{background-position:0% 0%}
+  50%{background-position:100% 100%}
+  100%{background-position:0% 0%}
+}
+
+.colorGradient {
+  background: linear-gradient(
+      to bottom,
+      var(--gradient_1) 0%,
+      var(--gradient_2) 65%,
+      var(--gradient_3) 100%
+    )
+    fixed;
+}
+
+.page {
+  min-height: 0vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.card {
+  background-color: var(--card);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+  border-radius: 15px;
+  width: 300px;
+  transition: 0.3s;
+  margin: 30px;
+  margin-top: 160px;
+  position: relative;
+}
+
+.card:hover {
+  box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
+}
+
+.card_header {
+  height: 110px;
+  width: 300px;
+  border-radius: 25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  position: relative;
+}
+
+.card_header_image {
+  position: absolute;
+  border-radius: 50%;
+  width: 100%;
+  margin-bottom: 70px;
+}
+
+.card_body {
+  padding: 15px;
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.card_body_view_contract {
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+.card_footer {
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.spin {
+  animation: item-spin infinite 20s linear;
+}
+
+.statusText {
+  color: var(--statusText);
+  font-weight: normal;
+  text-align: center;
+}
+
+.accountText {
+  color: var(--accountText);
+  font-weight: bold;
+  margin-top: 25px;
+  margin-right: 10px;
+}
+
+.ns {
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+}
+
+._90 {
+  -webkit-transform: rotate(90deg);
+  -moz-transform: rotate(90deg);
+  -o-transform: rotate(9
+  0deg);
+  -ms-transform: rotate(90deg);
+  transform: rotate(-90deg);
+}
+
+.button {
+  display: inline-block;
+  padding: 7px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  outline: none;
+  color: var(--button-text);
+  background-color: var(--button-bg);
+  border: none;
+  border-radius: 15px;
+  margin-top: 30px;
+  margin-bottom: 2px;
+}
+
+button:disabled {
+  opacity: 0.5;
+}
+
+.button:active {
+  background-color: var(--button-active-bg);
+}
+
+.small_button {
+  display: inline-block;
+  padding: 5px 10px;
+  font-size: 10px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  outline: none;
+  color: var(--button-text);
+  background-color: var(--small-button-bg);
+  border: none;
+  border-radius: 15px;
+  margin-bottom: 2px;
+}
+
+.small_button:disabled {
+  opacity: 0.5;
+}
+
+.small_button:active {
+  background-color: var(--small-button-active-bg);
+}
+
+@keyframes item-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
