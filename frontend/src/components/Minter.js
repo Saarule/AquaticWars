@@ -251,9 +251,6 @@ function Minter() {
     const params = {
       to: info.contractJSON.address,
       from: info.account,
-      value: String(
-        info.web3.utils.toHex(Number(mintInfo.giveSteroidsCost)) 
-      ),
       data: info.contract.methods
         .eat(mintInfo.eaterFishNumber, mintInfo.eatenFishNumber)
         .encodeABI(),
@@ -284,14 +281,6 @@ function Minter() {
     }
   };
 
-  const updateAmount = (newAmount) => {
-    if (newAmount <= 5 && newAmount >= 1) {
-      setMintInfo((prevState) => ({
-        ...prevState,
-        amount: newAmount,
-      }));
-    }
-  };
 
   const updateExtendBubbleToNumber = (newNumber) => {
     if (newNumber >= 1) {
