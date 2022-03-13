@@ -281,7 +281,6 @@ function Minter() {
     }
   };
 
-
   const updateExtendBubbleToNumber = (newNumber) => {
     if (newNumber >= 1) {
       setMintInfo((prevState) => ({
@@ -300,7 +299,6 @@ function Minter() {
     }
   };
 
-
   const updateEaterFishNumber = (newNumber) => {
     if (newNumber >= 1) {
       setMintInfo((prevState) => ({
@@ -309,7 +307,6 @@ function Minter() {
       }));
     }
   };
-
 
   const updateEatenFishNumber = (newNumber) => {
     if (newNumber >= 1) {
