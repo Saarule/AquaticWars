@@ -110,6 +110,7 @@ function Minter() {
         ...prevState,
         supply: 0,
       }));
+      getSupply();
     }
   };
 
@@ -134,6 +135,7 @@ function Minter() {
         ...prevState,
         cost: "0",
       }));
+      getCost();
     }
   };
 
