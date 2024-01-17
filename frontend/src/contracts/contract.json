@@ -3,9 +3,10 @@
   "symbol": "AQUA",
   "total_supply": 21000,
   "chain_symbol": "Matic",
-  "chain": "Polygon",
-  "chain_id": 137,
-  "address": "0x15e9064Bc16A1A59121556b5D99C1c5C288d9C51",
+  "chain": "Polygon Mumbai",
+  "chain_id": 80001,
+  "address": "0x39F5E1F55548b6766Bf2F45C39aa7EAEa3d1510a",
+  "rpcUrl": "https://rpc.ankr.com/polygon_mumbai",
   "abi": [
     {
       "inputs": [],
@@ -511,6 +512,25 @@
         }
       ],
       "name": "isApprovedForAll",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_addr",
+          "type": "address"
+        }
+      ],
+      "name": "isContract",
       "outputs": [
         {
           "internalType": "bool",
