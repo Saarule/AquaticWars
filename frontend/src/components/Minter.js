@@ -63,8 +63,6 @@ function Minter() {
     if (pay3) {
       pay3.on('pay3-sdk-login-status', (event) => {
         console.log("Received pay3-sdk-login-status", event.data);
-
-        console.log('ACCOUNT ADDRESS: ', event.data.address);
   
         setInfo((prevState) => ({
           ...prevState,
@@ -121,15 +119,13 @@ function Minter() {
 
     try {
       const supply = await pay3.readContract(params, info.contractJSON.rpcUrl);
-      console.log('SUPPLY : ', Web3.utils.hexToNumberString(supply));
   
       setMintInfo((prevState) => ({
         ...prevState,
         supply: Web3.utils.hexToNumberString(supply),
       }));
     } catch (err) {
-      console.log('SUPPLY ERROR: ', err);
-
+      console.error('SUPPLY ERROR: ', err);
       setMintInfo((prevState) => ({
         ...prevState,
         supply: 0,
@@ -146,15 +142,13 @@ function Minter() {
     };
 
     try {
-      const cost = await pay3.readContract(params, info.contractJSON.rpcUrl);
-      console.log('COST : ', Web3.utils.hexToNumberString(cost));
-  
+      const cost = await pay3.readContract(params, info.contractJSON.rpcUrl);  
       setMintInfo((prevState) => ({
         ...prevState,
         cost: Web3.utils.hexToNumberString(cost),
       }));
     } catch (err) {
-      console.log('COST ERROR: ', err);
+      console.error('COST ERROR: ', err);
 
       setMintInfo((prevState) => ({
         ...prevState,
@@ -173,8 +167,6 @@ function Minter() {
       requestId: Math.floor(Math.random()*(10**6)).toString(),
       args: [],
     };
-
-    console.log('MINTING: ', params);
 
     try {
       setMintInfo((prevState) => ({
