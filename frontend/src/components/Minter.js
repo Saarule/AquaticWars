@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Web3 from "web3";
+import { initPay3 } from "@pay3/sdk";
 import contract from "../contracts/contract.json";
 import Alt from "../assets/logo.png"
 import OpenSea from "../assets/open-sea-logo.png"
@@ -32,105 +33,123 @@ const initialMintState = {
 function Minter() {
   const [info, setInfo] = useState(initialInfoState);
   const [mintInfo, setMintInfo] = useState(initialMintState);
-
-  console.log(info);
+  const [pay3, setPay3] = useState(null);
 
   const init = async (_request, _contractJSON) => {
-    if (window.ethereum.isMetaMask) {
-      try {
-        const accounts = await window.ethereum.request({
-          method: _request,
-        });
-        const networkId = await window.ethereum.request({
-          method: "net_version",
-        });
-        if (networkId == _contractJSON.chain_id) {
-          let web3 = new Web3(window.ethereum);
-          setInfo((prevState) => ({
-            ...prevState,
-            connected: true,
-            status: null,
-            account: accounts[0],
-            web3: web3,
-            contract: new web3.eth.Contract(
-              _contractJSON.abi,
-              _contractJSON.address
-            ),
-            contractJSON: _contractJSON,
-          }));
-        } else {
-          setInfo(() => ({
-            ...initialInfoState,
-            status: `Change network to ${_contractJSON.chain}.`,
-          }));
-        }
-      } catch (err) {
-        console.log(err.message);
-        setInfo(() => ({
-          ...initialInfoState,
-        }));
-      }
+    if (info.connected) {
+      pay3.disconnect();
     } else {
-      setInfo(() => ({
-        ...initialInfoState,
-        status: "Please install metamask.",
-      }));
-    }
+      pay3.connect({ requestId: Math.floor(Math.random()*(10**6)).toString() });
+    };
   };
 
-  const initListeners = () => {
-    if (window.ethereum) {
-      window.ethereum.on("accountsChanged", () => {
-        window.location.reload();
+  useEffect(() => {
+    if (!pay3) {
+      const clientId = '300e22b2-ed57-488f-8d0d-1e1c164e14b6';
+      const hostname = 'https://demo1.pay3.app';
+  
+      const pay3Instance = initPay3({ clientId, hostname, isPaymentMode: false });
+  
+      setPay3(pay3Instance);
+
+      setInfo((prevState) => ({
+        ...prevState,
+        contractJSON: contract,
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (pay3) {
+      pay3.on('pay3-sdk-login-status', (event) => {
+        console.log("Received pay3-sdk-login-status", event.data);
+  
+        setInfo((prevState) => ({
+          ...prevState,
+          connected: event.data.isLoggedIn,
+          status: null,
+          account: event.data.isLoggedIn ? event.data.address : null,
+          web3: event.data.isLoggedIn ? pay3 : null,
+          contract: null,
+          contractJSON: contract,
+        }));
       });
-      window.ethereum.on("chainChanged", () => {
-        window.location.reload();
+
+      pay3.on('pay3-sdk-sendtxn-status', (event) => {
+        console.log("Received pay3-sdk-sendtxn-status", event.data);
+
+        setMintInfo((prevState) => ({
+          ...prevState,
+          loading: false,
+          status:
+            "Nice! Your NFT will show up on Opensea, once the transaction is successful.",
+        }));
+
+        getSupply();
+      });
+
+      pay3.on('pay3-sdk-transaction-status', (event) => {
+        console.log("Received pay3-sdk-transaction-status", event.data);
+
+        setMintInfo((prevState) => ({
+          ...prevState,
+          loading: false,
+          status:
+            "Nice! Your NFT will show up on Opensea, once the transaction is successful.",
+        }));
+
+        getSupply();
       });
     }
-  };
+  }, [pay3]);
+
+  useEffect(() => {
+    if (info.connected) {
+      getSupply();
+      getCost();
+    }
+  }, [info.connected]);
 
   const getSupply = async () => {
     const params = {
-      to: info.contractJSON.address,
-      from: info.account,
-      data: info.contract.methods.totalSupply().encodeABI(),
+      contractAddress: info.contractJSON.address,
+      abi: info.contractJSON.abi,
+      functionName: 'totalSupply',
     };
+
     try {
-      const result = await window.ethereum.request({
-        method: "eth_call",
-        params: [params],
-      });
-      console.log(info.web3.utils.hexToNumberString(result));
+      const supply = await pay3.readContract(params, info.contractJSON.rpcUrl);
+  
       setMintInfo((prevState) => ({
         ...prevState,
-        supply: info.web3.utils.hexToNumberString(result),
+        supply: Web3.utils.hexToNumberString(supply),
       }));
     } catch (err) {
+      console.error('SUPPLY ERROR: ', err);
       setMintInfo((prevState) => ({
         ...prevState,
         supply: 0,
       }));
       getSupply();
     }
-  };
+  }
 
   const getCost = async () => {
     const params = {
-      to: info.contractJSON.address,
-      from: info.account,
-      data: info.contract.methods.cost().encodeABI(),
+      contractAddress: info.contractJSON.address,
+      abi: info.contractJSON.abi,
+      functionName: 'cost',
     };
+
     try {
-      const result = await window.ethereum.request({
-        method: "eth_call",
-        params: [params],
-      });
-      console.log(info.web3.utils.hexToNumberString(result));
+      const cost = await pay3.readContract(params, info.contractJSON.rpcUrl);  
       setMintInfo((prevState) => ({
         ...prevState,
-        cost: info.web3.utils.hexToNumberString(result),
+        cost: Web3.utils.hexToNumberString(cost),
       }));
     } catch (err) {
+      console.error('COST ERROR: ', err);
+
       setMintInfo((prevState) => ({
         ...prevState,
         cost: "0",
@@ -142,31 +161,21 @@ function Minter() {
   const mint = async () => {
     const params = {
       to: info.contractJSON.address,
-      from: info.account,
-      value: String(
-        info.web3.utils.toHex(Number(mintInfo.cost) * mintInfo.amount + 100000000000000000) // The 100000000000000000 is solving an issuse of overflow numbers when calculating the price.
-      ),
-      data: info.contract.methods
-        .mint()
-        .encodeABI(),
+      value: Web3.utils.hexToNumberString(Web3.utils.toHex(Number(mintInfo.cost) * mintInfo.amount + 100000000000000000)), // The 100000000000000000 is solving an issuse of overflow numbers when calculating the price.,
+      functionName: 'mint',
+      userMessage: 'Mint NFT',
+      requestId: Math.floor(Math.random()*(10**6)).toString(),
+      args: [],
     };
+
     try {
       setMintInfo((prevState) => ({
         ...prevState,
         loading: true,
         status: `Minting ${mintInfo.amount}...`,
       }));
-      const txHash = await window.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [params],
-      });
-      setMintInfo((prevState) => ({
-        ...prevState,
-        loading: false,
-        status:
-          "Nice! Your NFT will show up on Opensea, once the transaction is successful.",
-      }));
-      getSupply();
+
+      pay3.sendTransactionWithFiatFallback(params);
     } catch (err) {
       setMintInfo((prevState) => ({
         ...prevState,
@@ -179,31 +188,21 @@ function Minter() {
   const extendBubble = async () => {
     const params = {
       to: info.contractJSON.address,
-      from: info.account,
-      value: String(
-        info.web3.utils.toHex(Number(mintInfo.extendBubbleCost)) 
-      ),
-      data: info.contract.methods
-        .extendBubble(mintInfo.extendBubbleToNumber)
-        .encodeABI(),
+      value: Web3.utils.hexToNumberString(Web3.utils.toHex(Number(mintInfo.extendBubbleCost))),
+      functionName: 'extendBubble',
+      args: [mintInfo.extendBubbleToNumber],
+      userMessage: 'Extend Bubble',
+      requestId: Math.floor(Math.random()*(10**6)).toString(),
     };
+
     try {
       setMintInfo((prevState) => ({
         ...prevState,
         loading: true,
         status: `Extending bubble...`,
       }));
-      const txHash = await window.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [params],
-      });
-      setMintInfo((prevState) => ({
-        ...prevState,
-        loading: false,
-        status:
-          "Nice! You just extended a bubble.",
-      }));
-      getSupply();
+
+      pay3.sendTransaction(params);
     } catch (err) {
       setMintInfo((prevState) => ({
         ...prevState,
@@ -216,31 +215,21 @@ function Minter() {
   const giveSteroids = async () => {
     const params = {
       to: info.contractJSON.address,
-      from: info.account,
-      value: String(
-        info.web3.utils.toHex(Number(mintInfo.giveSteroidsCost)) 
-      ),
-      data: info.contract.methods
-        .takeSteroids(mintInfo.giveSteroidsToNumber)
-        .encodeABI(),
+      value: Web3.utils.hexToNumberString(Web3.utils.toHex(Number(mintInfo.giveSteroidsCost))),
+      functionName: 'takeSteroids',
+      args: [mintInfo.giveSteroidsToNumber],
+      userMessage: 'Give Steroids',
+      requestId: Math.floor(Math.random()*(10**6)).toString(),
     };
+
     try {
       setMintInfo((prevState) => ({
         ...prevState,
         loading: true,
         status: `Giving steroids...`,
       }));
-      const txHash = await window.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [params],
-      });
-      setMintInfo((prevState) => ({
-        ...prevState,
-        loading: false,
-        status:
-          "Nice! You just gave steroids to a fish.",
-      }));
-      getSupply();
+
+      pay3.sendTransaction(params);
     } catch (err) {
       setMintInfo((prevState) => ({
         ...prevState,
@@ -249,31 +238,25 @@ function Minter() {
       }));
     }
   };
+
   const eatFish = async () => {
     const params = {
       to: info.contractJSON.address,
-      from: info.account,
-      data: info.contract.methods
-        .eat(mintInfo.eaterFishNumber, mintInfo.eatenFishNumber)
-        .encodeABI(),
+      value: '0',
+      functionName: 'eat',
+      args: [mintInfo.eaterFishNumber, mintInfo.eatenFishNumber],
+      userMessage: 'Eat Fish',
+      requestId: Math.floor(Math.random()*(10**6)).toString(),
     };
+
     try {
       setMintInfo((prevState) => ({
         ...prevState,
         loading: true,
         status: `Eating fish...`,
       }));
-      const txHash = await window.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [params],
-      });
-      setMintInfo((prevState) => ({
-        ...prevState,
-        loading: false,
-        status:
-          "Nice! You just ate a fish.",
-      }));
-      getSupply();
+
+      pay3.sendTransaction(params);
     } catch (err) {
       setMintInfo((prevState) => ({
         ...prevState,
@@ -324,18 +307,6 @@ function Minter() {
     init("eth_requestAccounts", _contractJSON);
   };
 
-  useEffect(() => {
-    connectToContract(contract);
-    initListeners();
-  }, []);
-
-  useEffect(() => {
-    if (info.connected) {
-      getSupply();
-      getCost();
-    }
-  }, [info.connected]);
-
   return (
     <div className="page" >
       
@@ -355,7 +326,7 @@ function Minter() {
               {/* ************** Spawn start here! ************** */}
               <div style={{ width: 10 }}></div>
               <button
-                disabled={!info.connected || mintInfo.cost == "0"}
+                disabled={!info.connected || mintInfo.cost === "0"}
                 className="button"
                 onClick={() => mint()}
               >
@@ -378,7 +349,7 @@ function Minter() {
             {info.connected ? (
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <p style={{ color: "var(--statusText)", textAlign: "center" }}>
-                  {info.web3?.utils.fromWei(mintInfo.cost, "ether") *
+                  {Web3?.utils.fromWei(mintInfo.cost, "ether") *
                     mintInfo.amount}{" "}
                   {contract.chain_symbol}
                 </p>
@@ -422,14 +393,14 @@ function Minter() {
             }}
             onClick={() => connectToContract(contract)}
           >
-            {info.account ? "Connected" : "Connect Wallet"}
+            {info.account ? "Disconnect" : "Connect Wallet"}
           </button>
           {info.connected ? (
-            <span className="accountText">
+            <button className="button" style={{ backgroundColor: "var(--info)" }} onClick={() => { pay3.openPortfolio() }}>
               {String(info.account).substring(0, 6) +
                 "..." +
                 String(info.account).substring(38)}
-            </span>
+            </button>
           ) : null}
         </div>
         <a
@@ -457,7 +428,7 @@ function Minter() {
                 <div>Extend Bubble to fish number:</div>
                 
                 <button
-                disabled={!info.connected || mintInfo.cost == "0"}
+                disabled={!info.connected || mintInfo.cost === "0"}
                 className="small_button"
                 onClick={() => updateExtendBubbleToNumber(mintInfo.extendBubbleToNumber - 1)}
               >
@@ -467,7 +438,7 @@ function Minter() {
                  {" #"+mintInfo.extendBubbleToNumber+" "} 
 
                 <button
-                disabled={!info.connected || mintInfo.cost == "0"}
+                disabled={!info.connected || mintInfo.cost === "0"}
                 className="small_button"
                 onClick={() => updateExtendBubbleToNumber(mintInfo.extendBubbleToNumber + 1)}
               >
@@ -475,7 +446,7 @@ function Minter() {
               </button>
 
               <button
-                disabled={!info.connected || mintInfo.cost == "0"}
+                disabled={!info.connected || mintInfo.cost === "0"}
                 className="button"
                 onClick={() => extendBubble()}
               >
@@ -492,7 +463,7 @@ function Minter() {
 
                 <div style={{paddingLeft:"25px"}}>
                 <button
-                disabled={!info.connected || mintInfo.cost == "0"}
+                disabled={!info.connected || mintInfo.cost === "0"}
                 className="small_button"
                 onClick={() => updateEatenFishNumber(mintInfo.eatenFishNumber - 1)}
                 >
@@ -502,7 +473,7 @@ function Minter() {
                 {" #"+mintInfo.eatenFishNumber+" "} 
 
                 <button
-                disabled={!info.connected || mintInfo.cost == "0"}
+                disabled={!info.connected || mintInfo.cost === "0"}
                 className="small_button"
                 onClick={() => updateEatenFishNumber(mintInfo.eatenFishNumber + 1)}
                 >
@@ -514,7 +485,7 @@ function Minter() {
 
                 <div style={{paddingLeft:"25px"}}>
                 <button
-                disabled={!info.connected || mintInfo.cost == "0"}
+                disabled={!info.connected || mintInfo.cost === "0"}
                 className="small_button"
                 onClick={() => updateEaterFishNumber(mintInfo.eaterFishNumber - 1)}
                 >
@@ -524,7 +495,7 @@ function Minter() {
                 {" #"+mintInfo.eaterFishNumber+" "} 
 
                 <button
-                disabled={!info.connected || mintInfo.cost == "0"}
+                disabled={!info.connected || mintInfo.cost === "0"}
                 className="small_button"
                 onClick={() => updateEaterFishNumber(mintInfo.eaterFishNumber + 1)}
                 >
@@ -533,7 +504,7 @@ function Minter() {
                 </div>
 
                 <button style={{marginLeft: 17}}
-                disabled={!info.connected || mintInfo.cost == "0"}
+                disabled={!info.connected || mintInfo.cost === "0"}
                 className="button"
                 onClick={() => eatFish()}
                 >
@@ -548,7 +519,7 @@ function Minter() {
 
               <div>Give Steroids to fish number: </div>
               <button
-                disabled={!info.connected || mintInfo.cost == "0"}
+                disabled={!info.connected || mintInfo.cost === "0"}
                 className="small_button"
                 onClick={() => updateGiveSteroidsToNumber(mintInfo.giveSteroidsToNumber - 1)}
               >
@@ -558,7 +529,7 @@ function Minter() {
                 {" #"+mintInfo.giveSteroidsToNumber+" "} 
 
                 <button
-                disabled={!info.connected || mintInfo.cost == "0"}
+                disabled={!info.connected || mintInfo.cost === "0"}
                 className="small_button"
                 onClick={() => updateGiveSteroidsToNumber(mintInfo.giveSteroidsToNumber + 1)}
               >
@@ -566,7 +537,7 @@ function Minter() {
               </button>
 
               <button
-                disabled={!info.connected || mintInfo.cost == "0"}
+                disabled={!info.connected || mintInfo.cost === "0"}
                 className="button"
                 onClick={() => giveSteroids()}
               >
