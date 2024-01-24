@@ -202,7 +202,7 @@ function Minter() {
         status: `Extending bubble...`,
       }));
 
-      pay3.sendTransaction(params);
+      pay3.sendTransactionWithFiatFallback(params);
     } catch (err) {
       setMintInfo((prevState) => ({
         ...prevState,
@@ -229,7 +229,7 @@ function Minter() {
         status: `Giving steroids...`,
       }));
 
-      pay3.sendTransaction(params);
+      pay3.sendTransactionWithFiatFallback(params);
     } catch (err) {
       setMintInfo((prevState) => ({
         ...prevState,
@@ -256,7 +256,7 @@ function Minter() {
         status: `Eating fish...`,
       }));
 
-      pay3.sendTransaction(params);
+      pay3.sendTransactionWithFiatFallback(params);
     } catch (err) {
       setMintInfo((prevState) => ({
         ...prevState,
